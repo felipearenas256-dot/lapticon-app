@@ -7,6 +7,7 @@ import '../../state/app_state.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loader.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/tickets.dart';
 import '../assistant/assistant_screen.dart';
 import '../encomiendas/encomienda_detail_screen.dart';
@@ -141,12 +142,13 @@ class HomeScreen extends StatelessWidget {
                 }
                 return Column(
                   children: [
-                    for (final encomienda in enCurso)
+                    for (final (index, encomienda) in enCurso.indexed)
                       Padding(
                         key: ValueKey(encomienda.id),
                         padding: const EdgeInsets.only(bottom: 12),
                         child: EncomiendaTicket(
                           encomienda: encomienda,
+                          index: index,
                           onTap: () => _push(
                             context,
                             EncomiendaDetailScreen(encomienda: encomienda),
@@ -184,7 +186,8 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    return Semantics(
+    return Pressable(
+      child: Semantics(
       button: true,
       label: '$title. $subtitle',
       excludeSemantics: true,
@@ -214,6 +217,7 @@ class _ActionTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

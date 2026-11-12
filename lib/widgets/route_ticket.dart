@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'motion.dart';
+
 /// Tarjeta de ruta con forma de pase de abordar. Es el elemento de identidad
 /// de la app: viajes y encomiendas se presentan siempre de esta manera.
 class RouteTicket extends StatelessWidget {
@@ -12,6 +14,7 @@ class RouteTicket extends StatelessWidget {
     this.onTap,
     this.highlighted = false,
     this.semanticLabel,
+    this.index = 0,
   });
 
   final String origen;
@@ -24,6 +27,9 @@ class RouteTicket extends StatelessWidget {
   final bool highlighted;
   final String? semanticLabel;
 
+  /// Posición en la lista, para que las tarjetas aparezcan una tras otra.
+  final int index;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -35,7 +41,11 @@ class RouteTicket extends StatelessWidget {
         ? scheme.onPrimary.withValues(alpha: 0.78)
         : scheme.onSurfaceVariant;
 
-    return Semantics(
+    return EntranceAnimation(
+      index: index,
+      child: Pressable(
+      enabled: onTap != null,
+      child: Semantics(
       button: onTap != null,
       label: semanticLabel ?? 'Ruta de $origen a $destino',
       child: Container(
@@ -104,6 +114,8 @@ class RouteTicket extends StatelessWidget {
             ),
           ),
         ),
+      ),
+      ),
       ),
     );
   }

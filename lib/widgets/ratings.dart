@@ -16,7 +16,7 @@ class StarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.secondary;
+    final color = Theme.of(context).colorScheme.primary;
     return Semantics(
       label: '${value.toStringAsFixed(1)} de 5 estrellas',
       excludeSemantics: true,
@@ -79,7 +79,7 @@ class _RatingBadgeState extends State<RatingBadge> {
             Icon(
               Icons.star_rounded,
               size: 16,
-              color: theme.colorScheme.secondary,
+              color: theme.colorScheme.primary,
             ),
             const SizedBox(width: 3),
             Flexible(
@@ -324,7 +324,7 @@ class _RateSheetState extends State<_RateSheet> {
                 IconButton(
                   iconSize: 38,
                   tooltip: '$star de 5',
-                  color: theme.colorScheme.secondary,
+                  color: theme.colorScheme.primary,
                   onPressed: _busy ? null : () => setState(() => _stars = star),
                   icon: Icon(
                     star <= _stars

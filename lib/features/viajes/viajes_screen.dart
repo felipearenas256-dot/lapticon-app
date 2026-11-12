@@ -54,10 +54,11 @@ class ViajesScreen extends StatelessWidget {
                             label: const Text('Registrar viaje'),
                           ),
                         ),
-                      for (final viaje in activos) ...[
+                      for (final (index, viaje) in activos.indexed) ...[
                         ViajeTicket(
                           key: ValueKey(viaje.id),
                           viaje: viaje,
+                          index: index,
                           highlighted: true,
                           onTap: () => _open(
                             context,
@@ -76,10 +77,11 @@ class ViajesScreen extends StatelessWidget {
                       if (pasados.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         const SectionTitle('Historial'),
-                        for (final viaje in pasados) ...[
+                        for (final (index, viaje) in pasados.indexed) ...[
                           ViajeTicket(
                             key: ValueKey(viaje.id),
                             viaje: viaje,
+                            index: activos.length + index,
                             onTap: () => _open(
                               context,
                               ViajeDetailScreen(viaje: viaje),

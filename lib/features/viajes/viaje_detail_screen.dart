@@ -32,7 +32,7 @@ class _ViajeDetailScreenState extends State<ViajeDetailScreen> {
       if (!mounted) return;
       setState(() => _viaje = _viaje.copyWith(estado: estado));
       context.read<Revision>().bump();
-      showMessage(context, done);
+      showSuccess(context, done);
     } catch (error) {
       if (mounted) showMessage(context, errorText(error));
     } finally {
@@ -150,12 +150,13 @@ class _EncomiendaList extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final encomienda in encomiendas)
+          for (final (index, encomienda) in encomiendas.indexed)
             Padding(
               key: ValueKey(encomienda.id),
               padding: const EdgeInsets.only(bottom: 12),
               child: EncomiendaTicket(
                 encomienda: encomienda,
+                index: index,
                 onTap: () => onOpen(encomienda),
               ),
             ),

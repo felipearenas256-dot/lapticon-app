@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/text.dart';
 import '../data/api_exception.dart';
 import '../data/auth_service.dart';
+import 'motion.dart';
 
 /// Margen lateral de todas las pantallas.
 const pagePadding = EdgeInsets.fromLTRB(20, 8, 20, 24);
@@ -155,13 +156,20 @@ class BusyButton extends StatelessWidget {
         color: Theme.of(context).colorScheme.onPrimary,
       ),
     );
+    final text = busy ? 'Un momento…' : label;
     return Semantics(
       liveRegion: busy,
-      child: FilledButton.icon(
-        style: style,
-        onPressed: busy ? null : onPressed,
-        icon: busy ? indicator : (icon == null ? null : Icon(icon)),
-        label: Text(busy ? 'Un momento…' : label),
+      child: Pressable(
+        enabled: !busy && onPressed != null,
+        child: FilledButton.icon(
+          style: style,
+          onPressed: busy ? null : onPressed,
+          icon: busy ? indicator : (icon == null ? null : Icon(icon)),
+          label: AnimatedSwitcher(
+            duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
+            child: Text(text, key: ValueKey(text)),
+          ),
+        ),
       ),
     );
   }
@@ -171,6 +179,23 @@ void showMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Aviso de que una operación salió bien, con un check que aparece animado.
+void showSuccess(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SuccessCheck(size: 26),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+      ),
+    );
 }
 
 String errorText(Object error) =>

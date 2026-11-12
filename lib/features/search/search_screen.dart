@@ -380,12 +380,13 @@ class _EncomiendasResult extends StatelessWidget {
               ? '1 encomienda disponible'
               : '${encomiendas.length} encomiendas disponibles',
         ),
-        for (final encomienda in encomiendas)
+        for (final (index, encomienda) in encomiendas.indexed)
           Padding(
             key: ValueKey(encomienda.id),
             padding: const EdgeInsets.only(bottom: 12),
             child: EncomiendaTicket(
               encomienda: encomienda,
+              index: index,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(

@@ -108,6 +108,7 @@ class _EncomiendasScreenState extends State<EncomiendasScreen> {
                               return EncomiendaTicket(
                                 key: ValueKey(encomienda.id),
                                 encomienda: encomienda,
+                                index: index,
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute<void>(

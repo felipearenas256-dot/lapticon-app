@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 /// Marca de Lapticon: una "L" trazada como ruta, de un punto de partida a un
 /// punto de llegada.
 class LapticonMark extends StatelessWidget {
-  const LapticonMark({super.key, this.size = 56});
+  const LapticonMark({super.key, this.size = 56, this.inverted = false});
 
   final double size;
+
+  /// Versión blanca con la ruta azul, para fondos azules.
+  final bool inverted;
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +18,12 @@ class LapticonMark extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: scheme.secondary,
+          color: inverted ? scheme.onPrimary : scheme.primary,
           borderRadius: BorderRadius.circular(size * 0.28),
         ),
-        child: CustomPaint(painter: _MarkPainter(scheme.onSecondary)),
+        child: CustomPaint(
+          painter: _MarkPainter(inverted ? scheme.primary : scheme.onPrimary),
+        ),
       ),
     );
   }

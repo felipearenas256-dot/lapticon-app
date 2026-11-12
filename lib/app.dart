@@ -14,6 +14,7 @@ import 'features/shell/splash_screen.dart';
 import 'state/app_state.dart';
 import 'state/session.dart';
 import 'theme/app_theme.dart';
+import 'widgets/motion.dart';
 
 class LapticonApp extends StatefulWidget {
   const LapticonApp({
@@ -92,12 +93,19 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = context.select<Session, SessionStatus>((s) => s.status);
-    return switch (status) {
+    final screen = switch (status) {
       SessionStatus.loading => const SplashScreen(),
       SessionStatus.signedOut => const WelcomeScreen(),
       SessionStatus.guest => const GuestShell(),
       SessionStatus.needsProfile => const CompleteProfileScreen(),
       SessionStatus.ready => const MainShell(),
     };
+    // Al iniciar o cerrar sesión la pantalla raíz cambia con un fundido.
+    return AnimatedSwitcher(
+      duration: Motion.reduced(context) ? Duration.zero : Motion.slow,
+      switchInCurve: Motion.enter,
+      switchOutCurve: Motion.exit,
+      child: KeyedSubtree(key: ValueKey(status), child: screen),
+    );
   }
 }

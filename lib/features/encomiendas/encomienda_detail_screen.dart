@@ -46,7 +46,7 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
       if (!mounted) return;
       setState(() => _encomienda = next());
       context.read<Revision>().bump();
-      showMessage(context, done);
+      showSuccess(context, done);
     } catch (error) {
       if (mounted) showMessage(context, errorText(error));
     } finally {
@@ -127,7 +127,7 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
     );
     if (saved && mounted) {
       setState(() => _rated = true);
-      showMessage(context, '¡Gracias por tu calificación!');
+      showSuccess(context, '¡Gracias por tu calificación!');
     }
   }
 

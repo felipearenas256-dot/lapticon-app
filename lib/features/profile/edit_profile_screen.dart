@@ -32,7 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       await context.read<Session>().updateProfile(_draft.toJson());
       if (!mounted) return;
-      showMessage(context, 'Perfil actualizado.');
+      showSuccess(context, 'Perfil actualizado.');
       Navigator.pop(context);
     } catch (error) {
       if (mounted) {

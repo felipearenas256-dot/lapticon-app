@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
+import '../../widgets/motion.dart';
 import '../auth/login_screen.dart';
 import '../encomiendas/encomiendas_screen.dart';
 import '../home/home_screen.dart';
@@ -42,7 +43,7 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tab = context.watch<ShellTab>();
     return Scaffold(
-      body: IndexedStack(
+      body: FadeIndexedStack(
         index: tab.value,
         children: const [
           HomeScreen(),

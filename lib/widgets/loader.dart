@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../data/api_exception.dart';
 import '../state/app_state.dart';
 import 'common.dart';
+import 'motion.dart';
 
 /// Carga datos y resuelve los estados de espera, error y recarga.
 ///
@@ -97,6 +98,22 @@ class _LoaderState<T> extends State<Loader<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // Al pasar de "cargando" al contenido (o al error) hay un fundido corto.
+    final state = _hasData ? 'data' : (_error != null ? 'error' : 'loading');
+    return AnimatedSwitcher(
+      duration: Motion.reduced(context) ? Duration.zero : Motion.medium,
+      switchInCurve: Motion.enter,
+      switchOutCurve: Motion.exit,
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.topCenter,
+        fit: StackFit.passthrough,
+        children: [...previous, ?current],
+      ),
+      child: KeyedSubtree(key: ValueKey(state), child: _content()),
+    );
+  }
+
+  Widget _content() {
     if (_hasData) return widget.builder(context, _data, _reload);
     return SingleChildScrollView(
       padding: widget.padding,

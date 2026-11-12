@@ -54,7 +54,7 @@ class _EncomiendaFormScreenState extends State<EncomiendaFormScreen> {
           );
       if (!mounted) return;
       context.read<Revision>().bump();
-      showMessage(context, 'Encomienda publicada.');
+      showSuccess(context, 'Encomienda publicada.');
       Navigator.pop(context);
     } catch (error) {
       if (mounted) {

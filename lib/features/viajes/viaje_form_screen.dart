@@ -105,7 +105,7 @@ class _ViajeFormScreenState extends State<ViajeFormScreen> {
           );
       if (!mounted) return;
       context.read<Revision>().bump();
-      showMessage(context, 'Viaje registrado.');
+      showSuccess(context, 'Viaje registrado.');
       Navigator.pop(context);
     } catch (error) {
       if (mounted) {

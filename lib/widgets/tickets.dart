@@ -11,9 +11,11 @@ class ViajeTicket extends StatelessWidget {
     required this.viaje,
     this.onTap,
     this.highlighted = false,
+    this.index = 0,
   });
 
   final Viaje viaje;
+  final int index;
   final VoidCallback? onTap;
   final bool highlighted;
 
@@ -30,6 +32,7 @@ class ViajeTicket extends StatelessWidget {
       destino: viaje.ciudadDestino,
       onTap: onTap,
       highlighted: highlighted,
+      index: index,
       semanticLabel: 'Viaje de ${viaje.ciudadOrigen} a ${viaje.ciudadDestino}, '
           '$detail, estado ${viaje.estado}',
       footer: Row(
@@ -59,9 +62,11 @@ class EncomiendaTicket extends StatelessWidget {
     super.key,
     required this.encomienda,
     this.onTap,
+    this.index = 0,
   });
 
   final Encomienda encomienda;
+  final int index;
   final VoidCallback? onTap;
 
   @override
@@ -75,6 +80,7 @@ class EncomiendaTicket extends StatelessWidget {
       destino: encomienda.ciudadDestino,
       icon: Icons.inventory_2_outlined,
       onTap: onTap,
+      index: index,
       semanticLabel:
           'Encomienda de ${encomienda.ciudadOrigen} a '
           '${encomienda.ciudadDestino}, valor $value, '
