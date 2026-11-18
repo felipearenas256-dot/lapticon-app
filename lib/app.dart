@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'config/env.dart';
 import 'data/api_client.dart';
 import 'data/auth_service.dart';
+import 'data/chat_service.dart';
 import 'data/lapticon_api.dart';
 import 'features/auth/complete_profile_screen.dart';
 import 'features/auth/welcome_screen.dart';
@@ -21,11 +22,15 @@ class LapticonApp extends StatefulWidget {
     super.key,
     required this.auth,
     required this.client,
+    this.chat,
     this.demoBanner = Env.demo,
   });
 
   final AuthService auth;
   final http.Client client;
+
+  /// Sin valor (como en las pruebas) se usa el chat en memoria.
+  final ChatService? chat;
   final bool demoBanner;
 
   @override
@@ -44,6 +49,7 @@ class _LapticonAppState extends State<LapticonApp> {
   final _revision = Revision();
   final _tab = ShellTab();
   late final _catalog = CityCatalog(_api);
+  late final ChatService _chat = widget.chat ?? DemoChatService();
 
   @override
   void dispose() {
@@ -58,6 +64,7 @@ class _LapticonAppState extends State<LapticonApp> {
         providers: [
           Provider.value(value: _api),
           Provider.value(value: _catalog),
+          Provider<ChatService>.value(value: _chat),
           ChangeNotifierProvider.value(value: _session),
           ChangeNotifierProvider.value(value: _revision),
           ChangeNotifierProvider.value(value: _tab),

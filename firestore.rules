@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// Reglas del chat de Lapticon. Cada conversación es la de una encomienda y
+// solo la pueden leer y escribir sus dos participantes: remitente y viajero.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function participa(chatId) {
+      return signedIn() && request.auth.uid in
+        get(/databases/$(database)/documents/chats/$(chatId)).data.participantes;
+    }
+
+    match /chats/{chatId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participantes;
+
+      // Quien abre el chat debe ser uno de los dos participantes.
+      allow create: if signedIn()
+        && request.resource.data.participantes is list
+        && request.resource.data.participantes.size() == 2
+        && request.auth.uid in request.resource.data.participantes;
+
+      // Nadie puede cambiar quiénes participan.
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participantes
+        && request.resource.data.participantes == resource.data.participantes;
+
+      match /mensajes/{mensajeId} {
+        allow read: if participa(chatId);
+
+        // Solo se escribe a nombre propio, con texto de 1 a 1000 caracteres.
+        allow create: if participa(chatId)
+          && request.resource.data.autor == request.auth.uid
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() > 0
+          && request.resource.data.texto.size() <= 1000
+          && request.resource.data.enviado == request.time;
+
+        // Los mensajes no se editan ni se borran.
+        allow update, delete: if false;
+      }
+    }
+  }
+}

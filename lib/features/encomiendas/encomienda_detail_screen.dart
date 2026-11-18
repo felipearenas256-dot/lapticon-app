@@ -8,9 +8,11 @@ import '../../data/models.dart';
 import '../../state/app_state.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/ratings.dart';
 import '../../widgets/route_ticket.dart';
 import '../../widgets/tickets.dart';
+import '../chat/chat_screen.dart';
 
 /// La API no tiene un endpoint para consultar una encomienda por id, así que
 /// esta pantalla parte del objeto de la lista y lo actualiza tras cada acción.
@@ -131,6 +133,27 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
     }
   }
 
+  void _openChat({required bool otroEsViajero}) {
+    final session = context.read<Session>();
+    final miUid = session.uid;
+    final otroUid =
+        otroEsViajero ? _encomienda.viajeroId : _encomienda.uid;
+    if (miUid == null || otroUid == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ChatScreen(
+          encomienda: _encomienda,
+          miUid: miUid,
+          miNombre: session.displayName,
+          otroUid: otroUid,
+          otroEsViajero: otroEsViajero,
+          otroNombre: otroEsViajero ? null : _encomienda.nombreRemitente,
+        ),
+      ),
+    );
+  }
+
   void _showSuggestions() => showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -186,6 +209,7 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            ..._chatButton(encomienda, isSender, isTraveler),
             ..._actions(encomienda, isSender, isTraveler),
             if (_busy) ...[
               const SizedBox(height: 16),
@@ -203,6 +227,23 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Remitente y viajero pueden hablar desde que la encomienda se toma hasta
+  /// que se confirma la entrega.
+  List<Widget> _chatButton(Encomienda e, bool isSender, bool isTraveler) {
+    const activos = {'tomada', 'entregada', 'recibida'};
+    if (!activos.contains(e.estado) || e.viajeroId == null || e.uid == null) {
+      return const [];
+    }
+    if (!isSender && !isTraveler) return const [];
+    return [
+      _ChatButton(
+        label: isSender ? 'Chatear con el viajero' : 'Chatear con el remitente',
+        onTap: () => _openChat(otroEsViajero: isSender),
+      ),
+      const SizedBox(height: 12),
+    ];
   }
 
   List<Widget> _actions(Encomienda e, bool isSender, bool isTraveler) {
@@ -284,6 +325,72 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
       }
     }
     return const [];
+  }
+}
+
+/// Acceso al chat, destacado como en las apps de transporte.
+class _ChatButton extends StatelessWidget {
+  const _ChatButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Pressable(
+      child: Material(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 20,
+                    color: scheme.onPrimary,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: scheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Acuerden dónde y cuándo se ven',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: scheme.onPrimaryContainer),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

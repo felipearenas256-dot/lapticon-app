@@ -202,4 +202,42 @@ void main() {
 
     expect(find.text('Explorar sin cuenta'), findsOneWidget);
   });
+
+  testWidgets('remitente y viajero conversan por el chat de la encomienda',
+      (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await openTab(tester, 'Encomiendas');
+
+    await tester.tap(find.text('Regalo de cumpleaños, caja pequeña'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chatear con el viajero'));
+    await tester.pumpAndSettle();
+
+    // Conversación previa y datos del viajero.
+    expect(find.text('Carlos Ruiz'), findsOneWidget);
+    expect(
+      find.text('Puede ser en el aeropuerto, puerta 3, a las 6 a. m.'),
+      findsOneWidget,
+    );
+
+    await tester.enterText(find.byType(TextField), 'Perfecto, allá nos vemos');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Enviar'));
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('Perfecto, allá nos vemos'), findsOneWidget);
+    expect(find.text('escribiendo…'), findsOneWidget);
+
+    // El viajero responde solo en el modo demo.
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('escribiendo…'), findsNothing);
+    expect(find.text('Visto'), findsOneWidget);
+
+    // Las respuestas rápidas también envían.
+    await tester.tap(find.text('¿Dónde nos vemos?'));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(find.text('¿Dónde nos vemos?'), findsNWidgets(2));
+  });
 }

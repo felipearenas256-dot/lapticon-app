@@ -80,10 +80,28 @@ La app ya contempla estos puntos, que no están en la documentación:
 | El nombre del remitente viene como `remitenteNombre` | El modelo lee ese campo |
 | `/chatbot` responde 500 porque la clave de OpenRouter del servidor es inválida | Avisa que el asistente no está disponible |
 
+## Chat entre remitente y viajero
+
+La API no tiene endpoints para enviar ni leer mensajes (solo `GET /api/chats/estado/{chatId}`),
+así que el chat usa **Cloud Firestore** del mismo proyecto Firebase (`lapticon-eba31`). Cada
+encomienda tomada tiene su conversación en `chats/{idEncomienda}`, con los mensajes en la
+subcolección `mensajes`. Se abre desde el detalle de la encomienda ("Chatear con el viajero" o
+"Chatear con el remitente") mientras está tomada, entregada o recibida.
+
+Para activarlo, alguien con acceso a la consola de Firebase debe:
+
+1. **Firestore Database → Crear base de datos** (modo producción, región cercana).
+2. **Reglas:** pegar el contenido de `firestore.rules` y publicar. Solo los dos participantes
+   leen y escriben su conversación, y nadie puede escribir a nombre de otro.
+3. **Configuración del proyecto → Tus apps → Agregar app Android** con el paquete
+   `com.lapticon.lapticon`, y poner el `App ID` que entrega en `FIREBASE_APP_ID` de
+   `config/firebase.json`.
+
+Mientras Firestore no esté activado, el chat muestra un aviso en lugar de fallar. En modo demo
+funciona con mensajes en memoria y la otra persona responde sola.
+
 ## Limitaciones de la API
 
-- **Chat:** solo existe `GET /api/chats/estado/{chatId}`. No hay forma de enviar mensajes ni de
-  conocer el `chatId`, por eso la app no incluye chat.
 - **Contacto:** `GET /api/users/{uid}` solo funciona para el dueño, así que no se puede ver el
   teléfono de la otra persona.
 - **Encomiendas tomadas:** no hay un listado general. Solo se consultan por ruta, y por eso se
