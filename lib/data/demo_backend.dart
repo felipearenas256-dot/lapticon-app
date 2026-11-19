@@ -8,10 +8,14 @@ import 'package:http/testing.dart';
 /// Replica lo observado en la API real: un solo viaje disponible por usuario,
 /// nadie toma ni califica lo propio, una encomienda no se toma dos veces,
 /// `cancelada` no es un estado válido, y `/api/vuelos` y `/api/chatbot` fallan.
+///
+/// Con [withSampleData] en `false` arranca vacío: solo la cuenta demo, sin
+/// viajes, encomiendas, calificaciones ni otros usuarios.
 http.Client demoClient({
   Duration latency = const Duration(milliseconds: 250),
+  bool withSampleData = true,
 }) {
-  final backend = _DemoBackend();
+  final backend = _DemoBackend(withSampleData: withSampleData);
   return MockClient((request) async {
     await Future<void>.delayed(latency);
     return backend.handle(request);
@@ -21,7 +25,8 @@ http.Client demoClient({
 const demoUid = 'demo-usuario';
 
 class _DemoBackend {
-  _DemoBackend() {
+  _DemoBackend({bool withSampleData = true}) {
+    if (!withSampleData) return;
     final now = DateTime.now().toUtc();
     String inDays(int days) => now.add(Duration(days: days)).toIso8601String();
     String dateIn(int days) {

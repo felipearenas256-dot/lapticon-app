@@ -56,6 +56,30 @@ void main() {
     expect(find.text('Explorar sin cuenta'), findsOneWidget);
   });
 
+  testWidgets('la demo limpia arranca sin viajes ni encomiendas',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      LapticonApp(
+        auth: DemoAuthService(),
+        client: demoClient(latency: Duration.zero, withSampleData: false),
+        demoBanner: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+
+    expect(find.text('Hola, Ana'), findsOneWidget);
+    expect(
+      find.text('Si vas a viajar, regístralo y lleva una encomienda.'),
+      findsOneWidget,
+    );
+    expect(find.text('No tienes encomiendas activas.'), findsOneWidget);
+    expect(find.text('Viajeros para tus encomiendas'), findsNothing);
+  });
+
   testWidgets('valida el formulario de login antes de enviar', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('Ya tengo cuenta'));

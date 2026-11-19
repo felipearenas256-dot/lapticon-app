@@ -23,8 +23,9 @@ Future<void> main() async {
 
   if (Env.demo) {
     auth = DemoAuthService();
-    client = demoClient();
-    chat = DemoChatService();
+    // La demo arranca limpia: solo la cuenta de Ana, sin datos de ejemplo.
+    client = demoClient(withSampleData: false);
+    chat = DemoChatService(withSampleData: false);
   } else if (Env.firebaseConfigured) {
     await Firebase.initializeApp(
       options: const FirebaseOptions(

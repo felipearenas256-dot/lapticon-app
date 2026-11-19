@@ -111,8 +111,11 @@ class ChatUnavailable implements Exception {
 /// Chat en memoria para el modo demo y las pruebas. La otra persona responde
 /// sola después de un momento, mostrando antes que está escribiendo.
 class DemoChatService implements ChatService {
-  DemoChatService({this.replyDelay = const Duration(milliseconds: 1600)}) {
-    _seed();
+  DemoChatService({
+    this.replyDelay = const Duration(milliseconds: 1600),
+    bool withSampleData = true,
+  }) {
+    if (withSampleData) _seed();
   }
 
   final Duration replyDelay;
