@@ -339,6 +339,17 @@ class _ViajerosEnRuta extends StatelessWidget {
   final Encomienda encomienda;
   final String? miUid;
 
+  bool esMio(Viaje v) => miUid != null && v.uid == miUid;
+
+  String _titulo(List<Viaje> viajes) {
+    final otros = viajes.where((v) => !esMio(v)).length;
+    if (viajes.isEmpty) return 'Viajeros en tu ruta';
+    if (otros == 0) return 'Tu viaje va por esta ruta';
+    return otros == 1
+        ? '1 viajero va por tu ruta'
+        : '$otros viajeros van por tu ruta';
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = context.read<LapticonApi>();
@@ -349,19 +360,17 @@ class _ViajerosEnRuta extends StatelessWidget {
           origen: encomienda.ciudadOrigen,
           destino: encomienda.ciudadDestino,
         );
-        return viajes.where((v) => v.uid != miUid).toList();
+        // El viaje propio también se muestra, primero y marcado.
+        return [
+          ...viajes.where((v) => esMio(v)),
+          ...viajes.where((v) => !esMio(v)),
+        ];
       },
       builder: (context, viajes, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 8),
-          SectionTitle(
-            viajes.length == 1
-                ? '1 viajero va por tu ruta'
-                : viajes.isEmpty
-                    ? 'Viajeros en tu ruta'
-                    : '${viajes.length} viajeros van por tu ruta',
-          ),
+          SectionTitle(_titulo(viajes)),
           if (viajes.isEmpty)
             const EmptyState(
               icon: Icons.flight_outlined,
@@ -371,7 +380,10 @@ class _ViajerosEnRuta extends StatelessWidget {
             )
           else ...[
             Text(
-              'Ya ven tu encomienda en su viaje y pueden tomarla.',
+              viajes.every(esMio)
+                  ? 'Tu viaje coincide con esta ruta. Los demás viajeros que '
+                      'vayan por aquí también aparecerán y podrán tomarla.'
+                  : 'Ya ven tu encomienda en su viaje y pueden tomarla.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -384,7 +396,10 @@ class _ViajerosEnRuta extends StatelessWidget {
                 child: ViajeroTicket(
                   viaje: viaje,
                   index: index,
-                  onTap: () => showViajeroSheet(context, viaje: viaje),
+                  mine: esMio(viaje),
+                  onTap: esMio(viaje)
+                      ? null
+                      : () => showViajeroSheet(context, viaje: viaje),
                 ),
               ),
           ],

@@ -242,18 +242,29 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
-    // También publica una encomienda en otra ruta.
+    // También publica una encomienda en la misma ruta.
     await openTab(tester, 'Inicio');
     await tester.tap(find.text('Enviar'));
     await tester.pumpAndSettle();
-    await pick('Origen', 'medellin', 'Medellin');
-    await pick('Destino', 'lima', 'Lima');
+    await pick('Origen', 'cali', 'Cali');
+    await pick('Destino', 'quito', 'Quito');
     await tester.enterText(
       find.widgetWithText(TextFormField, '¿Qué vas a enviar?'),
       'Un libro',
     );
     await tester.enterText(find.widgetWithText(TextFormField, 'Valor'), '10');
     await tester.tap(find.text('Publicar encomienda'));
+    await tester.pumpAndSettle();
+
+    // La encomienda publicada aparece en la pestaña Encomiendas.
+    await openTab(tester, 'Encomiendas');
+    expect(find.text('Un libro'), findsOneWidget);
+
+    // En su detalle aparece el viaje propio que va por la misma ruta.
+    await tester.tap(find.text('Un libro'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tu viaje va por esta ruta'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
     // Al abrir Buscar aparecen sus rutas, y con un toque se buscan.
@@ -272,8 +283,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await pick('Origen', 'medellin', 'Medellin');
-    await pick('Destino (opcional)', 'lima', 'Lima');
+    await pick('Origen', 'cali', 'Cali');
+    await pick('Destino (opcional)', 'quito', 'Quito');
     await tester.tap(find.text('Buscar encomiendas'));
     await tester.pumpAndSettle();
     expect(find.text('Tu encomienda · así la ven los viajeros'), findsOneWidget);
