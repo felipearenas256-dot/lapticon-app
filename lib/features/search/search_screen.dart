@@ -72,6 +72,16 @@ class _SearchScreenState extends State<SearchScreen>
     });
   }
 
+  /// Atajo desde "Tus rutas": llena la ruta y busca de una vez.
+  void _searchRoute(_Mode mode, String origen, String destino) {
+    setState(() {
+      _mode = mode;
+      _origen = origen;
+      _destino = destino;
+    });
+    _search();
+  }
+
   void _openLogin() => Navigator.push(
         context,
         MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
@@ -122,8 +132,12 @@ class _SearchScreenState extends State<SearchScreen>
             origen: origen,
             destino: destino,
           );
-    // `/buscar` incluye las propias, y nadie puede tomar su propia encomienda.
-    return encomiendas.where((e) => e.uid != uid).toList();
+    // Las propias también aparecen, primero y marcadas: el detalle no deja
+    // tomarlas.
+    return [
+      ...encomiendas.where((e) => uid != null && e.uid == uid),
+      ...encomiendas.where((e) => uid == null || e.uid != uid),
+    ];
   }
 
   void _publish(_Query query) {
@@ -201,6 +215,8 @@ class _SearchScreenState extends State<SearchScreen>
           ),
         ),
         const SizedBox(height: 18),
+        if (query == null && !_isGuest)
+          _MisRutas(onPick: _searchRoute),
         if (query != null)
           query.mode == _Mode.viajeros
               ? Loader<List<Viaje>>(
@@ -220,7 +236,10 @@ class _SearchScreenState extends State<SearchScreen>
                   key: ValueKey(query),
                   load: () => _encomiendas(query),
                   builder: (context, encomiendas, reload) =>
-                      _EncomiendasResult(encomiendas),
+                      _EncomiendasResult(
+                        encomiendas,
+                        miUid: context.read<Session>().uid,
+                      ),
                 ),
       ],
     );
@@ -360,9 +379,10 @@ class _ViajerosResult extends StatelessWidget {
 }
 
 class _EncomiendasResult extends StatelessWidget {
-  const _EncomiendasResult(this.encomiendas);
+  const _EncomiendasResult(this.encomiendas, {required this.miUid});
 
   final List<Encomienda> encomiendas;
+  final String? miUid;
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +408,7 @@ class _EncomiendasResult extends StatelessWidget {
             child: EncomiendaTicket(
               encomienda: encomienda,
               index: index,
+              mine: miUid != null && encomienda.uid == miUid,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(
@@ -400,4 +421,71 @@ class _EncomiendasResult extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Antes de buscar, ofrece las rutas del propio viaje y de las encomiendas
+/// publicadas, para ver con un toque cómo las encuentran los demás.
+class _MisRutas extends StatelessWidget {
+  const _MisRutas({required this.onPick});
+
+  final void Function(_Mode mode, String origen, String destino) onPick;
+
+  Future<List<(_Mode, String, String)>> _load(LapticonApi api) async {
+    final results = await Future.wait([
+      api.miViajeDisponible().catchError((Object _) => null),
+      api.misEncomiendas().catchError((Object _) => <Encomienda>[]),
+    ]);
+    final viaje = results[0] as Viaje?;
+    final encomiendas = results[1] as List<Encomienda>;
+    final rutas = <(_Mode, String, String)>[
+      if (viaje != null)
+        (_Mode.viajeros, viaje.ciudadOrigen, viaje.ciudadDestino),
+    ];
+    for (final e in encomiendas.where((e) => e.estado == 'disponible')) {
+      final ruta = (_Mode.encomiendas, e.ciudadOrigen, e.ciudadDestino);
+      if (!rutas.contains(ruta)) rutas.add(ruta);
+    }
+    return rutas.take(4).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) => Loader<List<(_Mode, String, String)>>(
+        load: () => _load(context.read<LapticonApi>()),
+        placeholder: const SizedBox.shrink(),
+        builder: (context, rutas, _) {
+          if (rutas.isEmpty) {
+            return const EmptyState(
+              icon: Icons.travel_explore,
+              title: 'Elige una ruta',
+              message: 'Busca viajeros que lleven tu encomienda, o '
+                  'encomiendas que puedas llevar en tu viaje.',
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionTitle('Tus rutas'),
+              for (final (mode, origen, destino) in rutas)
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    leading: Icon(
+                      mode == _Mode.viajeros
+                          ? Icons.flight_takeoff
+                          : Icons.inventory_2_outlined,
+                    ),
+                    title: Text('$origen → $destino'),
+                    subtitle: Text(
+                      mode == _Mode.viajeros
+                          ? 'Tu viaje: ver quién más va'
+                          : 'Tu encomienda: ver la ruta',
+                    ),
+                    trailing: const Icon(Icons.search),
+                    onTap: () => onPick(mode, origen, destino),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }

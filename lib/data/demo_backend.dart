@@ -403,10 +403,10 @@ class _DemoBackend {
     return _json({'error': 'No encontrado'}, 404);
   }
 
+  /// Como la API real, incluye también las encomiendas de quien busca.
   List<Map<String, dynamic>> _disponibles(String? origen, String? destino) =>
       _encomiendas.where((e) {
         return e['estado'] == 'disponible' &&
-            e['uid'] != demoUid &&
             (origen == null || _same(e['ciudadOrigen'], origen)) &&
             (destino == null || _same(e['ciudadDestino'], destino));
       }).toList();

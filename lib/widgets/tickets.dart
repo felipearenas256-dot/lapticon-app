@@ -63,11 +63,15 @@ class EncomiendaTicket extends StatelessWidget {
     required this.encomienda,
     this.onTap,
     this.index = 0,
+    this.mine = false,
   });
 
   final Encomienda encomienda;
   final int index;
   final VoidCallback? onTap;
+
+  /// La publicó quien mira: en la búsqueda se marca como suya.
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +115,18 @@ class EncomiendaTicket extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(color: muted),
             ),
           ],
-          if (encomienda.nombreRemitente != null) ...[
+          if (mine) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Tu encomienda · así la ven los viajeros',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ] else if (encomienda.nombreRemitente != null) ...[
             const SizedBox(height: 4),
             Text(
               'Enviada por ${encomienda.nombreRemitente}',

@@ -242,14 +242,41 @@ void main() {
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
-    await openTab(tester, 'Buscar');
-    await pick('Origen', 'cali', 'Cali');
-    await pick('Destino (opcional)', 'quito', 'Quito');
-    await tester.tap(find.text('Buscar viajeros'));
+    // También publica una encomienda en otra ruta.
+    await openTab(tester, 'Inicio');
+    await tester.tap(find.text('Enviar'));
+    await tester.pumpAndSettle();
+    await pick('Origen', 'medellin', 'Medellin');
+    await pick('Destino', 'lima', 'Lima');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '¿Qué vas a enviar?'),
+      'Un libro',
+    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Valor'), '10');
+    await tester.tap(find.text('Publicar encomienda'));
     await tester.pumpAndSettle();
 
+    // Al abrir Buscar aparecen sus rutas, y con un toque se buscan.
+    await openTab(tester, 'Buscar');
+    expect(find.text('Tus rutas'), findsOneWidget);
+    await tester.tap(find.text('Tu viaje: ver quién más va'));
+    await tester.pumpAndSettle();
     expect(find.text('Solo tu viaje va por esta ruta'), findsOneWidget);
     expect(find.text('Tu viaje · así lo ven los demás'), findsOneWidget);
+
+    // Búsqueda manual de encomiendas: la propia aparece marcada.
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is SegmentedButton),
+        matching: find.text('Encomiendas'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await pick('Origen', 'medellin', 'Medellin');
+    await pick('Destino (opcional)', 'lima', 'Lima');
+    await tester.tap(find.text('Buscar encomiendas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tu encomienda · así la ven los viajeros'), findsOneWidget);
   });
 
   testWidgets('el remitente ve los viajeros que van por la ruta de su encomienda',
