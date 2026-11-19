@@ -141,7 +141,8 @@ void main() {
     await tester.tap(find.text('Buscar viajeros'));
     await tester.pumpAndSettle();
 
-    expect(find.text('2 viajeros disponibles'), findsOneWidget);
+    expect(find.text('3 viajeros disponibles'), findsOneWidget);
+    expect(find.text('Ana Gómez'), findsOneWidget);
     expect(find.text('Carlos Ruiz'), findsOneWidget);
     expect(find.text('Lucía Mora'), findsOneWidget);
   });
@@ -175,8 +176,9 @@ void main() {
     await tester.tap(find.text('Buscar viajeros'));
     await tester.pumpAndSettle();
 
-    // Mi propio viaje (AV204) no se me ofrece.
+    // Mi viaje (AV204) aparece marcado como mío, sin botón para enviarme.
     expect(find.text('2 viajeros disponibles'), findsOneWidget);
+    expect(find.text('Tu viaje · así lo ven los demás'), findsOneWidget);
 
     await tester.tap(find.text('Carlos Ruiz'));
     await tester.pumpAndSettle();
@@ -196,6 +198,58 @@ void main() {
       find.text('Encomienda publicada. Carlos Ruiz la verá en su viaje.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('el viaje recién registrado aparece al buscar su ruta',
+      (tester) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      LapticonApp(
+        auth: DemoAuthService(),
+        client: demoClient(latency: Duration.zero, withSampleData: false),
+        demoBanner: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await signIn(tester);
+
+    Future<void> pick(String field, String text, String city) async {
+      await tester.tap(find.text(field).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, text);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, city));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.text('Viajar'));
+    await tester.pumpAndSettle();
+    await pick('Origen', 'cali', 'Cali');
+    await pick('Destino', 'quito', 'Quito');
+    await tester.tap(find.byIcon(Icons.event_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ACEPTAR'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Número de vuelo'),
+      'AV204',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Registrar viaje'));
+    await tester.pumpAndSettle();
+    expect(find.text('Disponibles en tu ruta'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    await openTab(tester, 'Buscar');
+    await pick('Origen', 'cali', 'Cali');
+    await pick('Destino (opcional)', 'quito', 'Quito');
+    await tester.tap(find.text('Buscar viajeros'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Solo tu viaje va por esta ruta'), findsOneWidget);
+    expect(find.text('Tu viaje · así lo ven los demás'), findsOneWidget);
   });
 
   testWidgets('el remitente ve los viajeros que van por la ruta de su encomienda',

@@ -14,11 +14,15 @@ class ViajeroTicket extends StatelessWidget {
     required this.viaje,
     this.onTap,
     this.index = 0,
+    this.mine = false,
   });
 
   final Viaje viaje;
   final VoidCallback? onTap;
   final int index;
+
+  /// Es el viaje de quien mira: se marca como suyo y no se le ofrece.
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +34,9 @@ class ViajeroTicket extends StatelessWidget {
       origen: viaje.ciudadOrigen,
       destino: viaje.ciudadDestino,
       index: index,
-      semanticLabel: '$name viaja de ${viaje.ciudadOrigen} a '
+      semanticLabel: '${mine ? 'Tu viaje' : name}: viaja de ${viaje.ciudadOrigen} a '
           '${viaje.ciudadDestino} el ${formatDateOnly(viaje.fechaViaje)}',
+      highlighted: mine,
       onTap: onTap,
       footer: Row(
         children: [
@@ -42,19 +47,23 @@ class ViajeroTicket extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  mine ? 'Tu viaje · así lo ven los demás' : name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: mine ? theme.colorScheme.onPrimary : null,
+                  ),
                 ),
-                if (uid != null) RatingBadge(uid: uid),
+                if (uid != null && !mine) RatingBadge(uid: uid),
               ],
             ),
           ),
           const SizedBox(width: 8),
           Text(
             formatDateOnly(viaje.fechaViaje),
-            style: theme.textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: mine ? theme.colorScheme.onPrimary : null,
+            ),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/lapticon_api.dart';
 import '../../data/models.dart';
+import '../../state/app_state.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loader.dart';
@@ -85,8 +86,12 @@ class _SearchScreenState extends State<SearchScreen>
             origen: query.origen!,
             destino: query.destino!,
           );
-    // Tu propio viaje no se te ofrece a ti.
-    return viajes.where((v) => uid == null || v.uid != uid).toList();
+    // Tu viaje también aparece, primero y marcado como tuyo, para que veas
+    // cómo lo encuentran los demás.
+    return [
+      ...viajes.where((v) => uid != null && v.uid == uid),
+      ...viajes.where((v) => uid == null || v.uid != uid),
+    ];
   }
 
   /// Encomienda dirigida al viaje elegido: misma ruta, y el viajero la ve en
@@ -206,6 +211,9 @@ class _SearchScreenState extends State<SearchScreen>
                     canPublish: query.destino != null,
                     onPublish: () => _publish(query),
                     onSendWith: _sendWith,
+                    miUid: context.read<Session>().uid,
+                    onOpenMine: () =>
+                        context.read<ShellTab>().value = ShellTab.viajes,
                   ),
                 )
               : Loader<List<Encomienda>>(
@@ -286,7 +294,12 @@ class _ViajerosResult extends StatelessWidget {
     required this.canPublish,
     required this.onPublish,
     required this.onSendWith,
+    required this.miUid,
+    required this.onOpenMine,
   });
+
+  final String? miUid;
+  final VoidCallback onOpenMine;
 
   final List<Viaje> viajes;
   final bool canPublish;
@@ -310,13 +323,18 @@ class _ViajerosResult extends StatelessWidget {
       );
     }
 
+    bool esMio(Viaje v) => miUid != null && v.uid == miUid;
+    final otros = viajes.where((v) => !esMio(v)).length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SectionTitle(
-          viajes.length == 1
-              ? '1 viajero disponible'
-              : '${viajes.length} viajeros disponibles',
+          otros == 0
+              ? 'Solo tu viaje va por esta ruta'
+              : otros == 1
+                  ? '1 viajero disponible'
+                  : '$otros viajeros disponibles',
         ),
         for (final (index, viaje) in viajes.indexed)
           Padding(
@@ -325,11 +343,14 @@ class _ViajerosResult extends StatelessWidget {
             child: ViajeroTicket(
               viaje: viaje,
               index: index,
-              onTap: () => showViajeroSheet(
-                context,
-                viaje: viaje,
-                onAction: () => onSendWith(viaje),
-              ),
+              mine: esMio(viaje),
+              onTap: esMio(viaje)
+                  ? onOpenMine
+                  : () => showViajeroSheet(
+                        context,
+                        viaje: viaje,
+                        onAction: () => onSendWith(viaje),
+                      ),
             ),
           ),
         if (canPublish) ...[const SizedBox(height: 4), publish],

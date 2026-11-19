@@ -274,15 +274,25 @@ class _DemoBackend {
             ? _json({'error': 'No hay viajes disponibles'}, 404)
             : _json(active.first);
       case 'buscar':
-        return _json(_viajesDe(query['ciudad'], null));
+        return _json(
+          _viajesDe(query['ciudad'], null, incluirPropios: true)
+              .map(_conNombre)
+              .toList(),
+        );
       case 'disponibles':
         return _json(
-          _viajesDe(query['ciudadOrigen'], query['ciudadDestino'])
+          // Como la API real, la búsqueda pública incluye también los viajes
+          // de quien busca.
+          _viajesDe(
+            query['ciudadOrigen'],
+            query['ciudadDestino'],
+            incluirPropios: true,
+          )
               .map((v) => {
                     'ciudadOrigen': v['ciudadOrigen'],
                     'ciudadDestino': v['ciudadDestino'],
                     'fechaViaje': v['fechaViaje'],
-                    'nombreUsuario': v['nombreUsuario'] ?? 'Anónimo',
+                    'nombreUsuario': _conNombre(v)['nombreUsuario'],
                     'uid': v['uid'],
                   })
               .toList(),
@@ -291,10 +301,21 @@ class _DemoBackend {
     return _json({'error': 'No encontrado'}, 404);
   }
 
-  List<Map<String, dynamic>> _viajesDe(String? origen, String? destino) =>
+  Map<String, dynamic> _conNombre(Map<String, dynamic> v) => {
+        ...v,
+        'nombreUsuario': v['uid'] == demoUid
+            ? '${_usuario['nombre']} ${_usuario['apellido']}'.trim()
+            : v['nombreUsuario'] ?? 'Anónimo',
+      };
+
+  List<Map<String, dynamic>> _viajesDe(
+    String? origen,
+    String? destino, {
+    bool incluirPropios = false,
+  }) =>
       _viajes.where((v) {
         return v['estado'] == 'disponible' &&
-            v['uid'] != demoUid &&
+            (incluirPropios || v['uid'] != demoUid) &&
             _same(v['ciudadOrigen'], origen) &&
             (destino == null || _same(v['ciudadDestino'], destino));
       }).toList();
