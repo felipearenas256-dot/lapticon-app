@@ -8,10 +8,12 @@ import '../../data/models.dart';
 import '../../state/app_state.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
+import '../../widgets/loader.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/ratings.dart';
 import '../../widgets/route_ticket.dart';
 import '../../widgets/tickets.dart';
+import '../../widgets/viajeros.dart';
 import '../chat/chat_screen.dart';
 
 /// La API no tiene un endpoint para consultar una encomienda por id, así que
@@ -211,6 +213,8 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
             const SizedBox(height: 20),
             ..._chatButton(encomienda, isSender, isTraveler),
             ..._actions(encomienda, isSender, isTraveler),
+            if (encomienda.estado == 'disponible' && isSender)
+              _ViajerosEnRuta(encomienda: encomienda, miUid: uid),
             if (_busy) ...[
               const SizedBox(height: 16),
               const Center(child: CircularProgressIndicator()),
@@ -247,7 +251,6 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
   }
 
   List<Widget> _actions(Encomienda e, bool isSender, bool isTraveler) {
-    const gap = SizedBox(height: 10);
     final enabled = !_busy;
 
     if (e.estado == 'disponible' && !isSender) {
@@ -261,12 +264,12 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
     }
     if (e.estado == 'disponible' && isSender) {
       return [
-        FilledButton.icon(
+        OutlinedButton.icon(
           onPressed: _showSuggestions,
           icon: const Icon(Icons.auto_awesome_outlined),
           label: const Text('Ver viajeros sugeridos'),
         ),
-        gap,
+        const SizedBox(height: 10),
         OutlinedButton(
           onPressed: enabled ? _withdraw : null,
           child: const Text('Retirar encomienda'),
@@ -325,6 +328,69 @@ class _EncomiendaDetailScreenState extends State<EncomiendaDetailScreen> {
       }
     }
     return const [];
+  }
+}
+
+/// Viajes publicados por otras personas en la misma ruta. Cada viajero ve esta
+/// encomienda en "Disponibles en tu ruta" de su viaje y puede tomarla.
+class _ViajerosEnRuta extends StatelessWidget {
+  const _ViajerosEnRuta({required this.encomienda, required this.miUid});
+
+  final Encomienda encomienda;
+  final String? miUid;
+
+  @override
+  Widget build(BuildContext context) {
+    final api = context.read<LapticonApi>();
+    return Loader<List<Viaje>>(
+      placeholder: const TicketSkeletons(count: 1),
+      load: () async {
+        final viajes = await api.viajesDisponibles(
+          origen: encomienda.ciudadOrigen,
+          destino: encomienda.ciudadDestino,
+        );
+        return viajes.where((v) => v.uid != miUid).toList();
+      },
+      builder: (context, viajes, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
+          SectionTitle(
+            viajes.length == 1
+                ? '1 viajero va por tu ruta'
+                : viajes.isEmpty
+                    ? 'Viajeros en tu ruta'
+                    : '${viajes.length} viajeros van por tu ruta',
+          ),
+          if (viajes.isEmpty)
+            const EmptyState(
+              icon: Icons.flight_outlined,
+              title: 'Aún nadie viaja por esta ruta',
+              message: 'Cuando alguien registre un viaje de '
+                  'esta ruta aparecerá aquí y verá tu encomienda.',
+            )
+          else ...[
+            Text(
+              'Ya ven tu encomienda en su viaje y pueden tomarla.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            for (final (index, viaje) in viajes.indexed)
+              Padding(
+                key: ValueKey('${viaje.uid}-$index'),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ViajeroTicket(
+                  viaje: viaje,
+                  index: index,
+                  onTap: () => showViajeroSheet(context, viaje: viaje),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

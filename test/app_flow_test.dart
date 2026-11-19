@@ -122,6 +122,72 @@ void main() {
     expect(find.text('Lucía Mora'), findsOneWidget);
   });
 
+  testWidgets('el viaje de otro usuario se ofrece y se le envía una encomienda',
+      (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+
+    // En Inicio aparecen los viajeros que sirven para mi encomienda publicada.
+    await tester.scrollUntilVisible(
+      find.text('Viajeros para tus encomiendas'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Viajeros para tus encomiendas'), findsOneWidget);
+
+    await openTab(tester, 'Buscar');
+    await tester.tap(find.text('Origen'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'bogota');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Bogotá'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Destino (opcional)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'miami');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Miami'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buscar viajeros'));
+    await tester.pumpAndSettle();
+
+    // Mi propio viaje (AV204) no se me ofrece.
+    expect(find.text('2 viajeros disponibles'), findsOneWidget);
+
+    await tester.tap(find.text('Carlos Ruiz'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enviar encomienda en este viaje'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Para el viaje de Carlos Ruiz'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, '¿Qué vas a enviar?'),
+      'Un libro',
+    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Valor'), '10');
+    await tester.tap(find.text('Publicar encomienda'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Encomienda publicada. Carlos Ruiz la verá en su viaje.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('el remitente ve los viajeros que van por la ruta de su encomienda',
+      (tester) async {
+    await pumpApp(tester);
+    await signIn(tester);
+    await openTab(tester, 'Encomiendas');
+
+    await tester.tap(find.text('Documentos en sobre sellado'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 viajeros van por tu ruta'), findsOneWidget);
+    expect(find.text('Carlos Ruiz'), findsOneWidget);
+    expect(find.text('Lucía Mora'), findsOneWidget);
+  });
+
   testWidgets('el invitado no puede buscar sin origen', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('Explorar sin cuenta'));

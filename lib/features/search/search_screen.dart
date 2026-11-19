@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/format.dart';
 import '../../data/lapticon_api.dart';
 import '../../data/models.dart';
 import '../../state/session.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loader.dart';
 import '../../widgets/pickers.dart';
-import '../../widgets/ratings.dart';
-import '../../widgets/route_ticket.dart';
 import '../../widgets/tickets.dart';
+import '../../widgets/viajeros.dart';
 import '../auth/login_screen.dart';
 import '../encomiendas/encomienda_detail_screen.dart';
 import '../encomiendas/encomienda_form_screen.dart';
@@ -78,14 +76,33 @@ class _SearchScreenState extends State<SearchScreen>
         MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
       );
 
-  Future<List<Viaje>> _viajeros(_Query query) {
+  Future<List<Viaje>> _viajeros(_Query query) async {
     final api = context.read<LapticonApi>();
-    return query.destino == null
-        ? api.buscarViajerosPorOrigen(query.origen!)
-        : api.viajesDisponibles(
+    final uid = context.read<Session>().uid;
+    final viajes = query.destino == null
+        ? await api.buscarViajerosPorOrigen(query.origen!)
+        : await api.viajesDisponibles(
             origen: query.origen!,
             destino: query.destino!,
           );
+    // Tu propio viaje no se te ofrece a ti.
+    return viajes.where((v) => uid == null || v.uid != uid).toList();
+  }
+
+  /// Encomienda dirigida al viaje elegido: misma ruta, y el viajero la ve en
+  /// "Disponibles en tu ruta" para tomarla.
+  void _sendWith(Viaje viaje) {
+    if (_isGuest) return _openLogin();
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => EncomiendaFormScreen(
+          origen: viaje.ciudadOrigen,
+          destino: viaje.ciudadDestino,
+          viajero: viaje,
+        ),
+      ),
+    );
   }
 
   Future<List<Encomienda>> _encomiendas(_Query query) async {
@@ -188,6 +205,7 @@ class _SearchScreenState extends State<SearchScreen>
                     viajes: viajes,
                     canPublish: query.destino != null,
                     onPublish: () => _publish(query),
+                    onSendWith: _sendWith,
                   ),
                 )
               : Loader<List<Encomienda>>(
@@ -267,11 +285,13 @@ class _ViajerosResult extends StatelessWidget {
     required this.viajes,
     required this.canPublish,
     required this.onPublish,
+    required this.onSendWith,
   });
 
   final List<Viaje> viajes;
   final bool canPublish;
   final VoidCallback onPublish;
+  final ValueChanged<Viaje> onSendWith;
 
   @override
   Widget build(BuildContext context) {
@@ -302,58 +322,18 @@ class _ViajerosResult extends StatelessWidget {
           Padding(
             key: ValueKey('${viaje.uid}-$index'),
             padding: const EdgeInsets.only(bottom: 12),
-            child: _ViajeroTicket(viaje),
+            child: ViajeroTicket(
+              viaje: viaje,
+              index: index,
+              onTap: () => showViajeroSheet(
+                context,
+                viaje: viaje,
+                onAction: () => onSendWith(viaje),
+              ),
+            ),
           ),
         if (canPublish) ...[const SizedBox(height: 4), publish],
       ],
-    );
-  }
-}
-
-class _ViajeroTicket extends StatelessWidget {
-  const _ViajeroTicket(this.viaje);
-
-  final Viaje viaje;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final uid = viaje.uid;
-    final name = viaje.nombreUsuario ?? 'Viajero';
-
-    return RouteTicket(
-      origen: viaje.ciudadOrigen,
-      destino: viaje.ciudadDestino,
-      semanticLabel: '$name viaja de ${viaje.ciudadOrigen} a '
-          '${viaje.ciudadDestino} el ${formatDateOnly(viaje.fechaViaje)}',
-      onTap: uid == null
-          ? null
-          : () => showUserSheet(context, uid: uid, name: name),
-      footer: Row(
-        children: [
-          UserAvatar(name: name, radius: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge,
-                ),
-                if (uid != null) RatingBadge(uid: uid),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            formatDateOnly(viaje.fechaViaje),
-            style: theme.textTheme.bodyMedium,
-          ),
-        ],
-      ),
     );
   }
 }

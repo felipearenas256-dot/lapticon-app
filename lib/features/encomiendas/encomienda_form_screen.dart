@@ -2,17 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/format.dart';
 import '../../core/text.dart';
 import '../../data/lapticon_api.dart';
+import '../../data/models.dart';
 import '../../state/app_state.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
 
 class EncomiendaFormScreen extends StatefulWidget {
-  const EncomiendaFormScreen({super.key, this.origen, this.destino});
+  const EncomiendaFormScreen({
+    super.key,
+    this.origen,
+    this.destino,
+    this.viajero,
+  });
 
   final String? origen;
   final String? destino;
+
+  /// Viaje que eligió el remitente. La encomienda se publica en su ruta y el
+  /// viajero la ve en el detalle de su viaje para tomarla.
+  final Viaje? viajero;
 
   @override
   State<EncomiendaFormScreen> createState() => _EncomiendaFormScreenState();
@@ -54,7 +65,14 @@ class _EncomiendaFormScreenState extends State<EncomiendaFormScreen> {
           );
       if (!mounted) return;
       context.read<Revision>().bump();
-      showSuccess(context, 'Encomienda publicada.');
+      final viajero = widget.viajero;
+      showSuccess(
+        context,
+        viajero == null
+            ? 'Encomienda publicada.'
+            : 'Encomienda publicada. '
+                '${viajero.nombreUsuario ?? 'El viajero'} la verá en su viaje.',
+      );
       Navigator.pop(context);
     } catch (error) {
       if (mounted) {
@@ -78,6 +96,10 @@ class _EncomiendaFormScreenState extends State<EncomiendaFormScreen> {
           child: ListView(
             padding: pagePadding,
             children: [
+              if (widget.viajero != null) ...[
+                _ViajeroBanner(widget.viajero!),
+                const SizedBox(height: 16),
+              ],
               CityFormField(
                 label: 'Origen',
                 icon: Icons.trip_origin,
@@ -166,6 +188,53 @@ class _EncomiendaFormScreenState extends State<EncomiendaFormScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ViajeroBanner extends StatelessWidget {
+  const _ViajeroBanner(this.viaje);
+
+  final Viaje viaje;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final name = viaje.nombreUsuario ?? 'El viajero';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          UserAvatar(name: name, radius: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Para el viaje de $name',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${viaje.ciudadOrigen} → ${viaje.ciudadDestino} · '
+                  '${formatDateOnly(viaje.fechaViaje)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

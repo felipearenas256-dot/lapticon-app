@@ -9,6 +9,7 @@ import '../../widgets/common.dart';
 import '../../widgets/loader.dart';
 import '../../widgets/motion.dart';
 import '../../widgets/tickets.dart';
+import '../../widgets/viajeros.dart';
 import '../assistant/assistant_screen.dart';
 import '../encomiendas/encomienda_detail_screen.dart';
 import '../encomiendas/encomienda_form_screen.dart';
@@ -159,11 +160,84 @@ class HomeScreen extends StatelessWidget {
                 );
               },
             ),
+            const _ViajerosParaTi(),
           ],
         ),
       ),
     );
   }
+}
+
+/// Viajes de otras personas que coinciden con la ruta de tus encomiendas
+/// publicadas: así se entera el remitente de que alguien puede llevarla.
+class _ViajerosParaTi extends StatelessWidget {
+  const _ViajerosParaTi();
+
+  static const _maxRutas = 3;
+
+  Future<List<(Viaje, Encomienda)>> _load(BuildContext context) async {
+    final api = context.read<LapticonApi>();
+    final uid = context.read<Session>().uid;
+    final disponibles = (await api.misEncomiendas())
+        .where((e) => e.estado == 'disponible')
+        .toList();
+    final rutas = <String, Encomienda>{};
+    for (final e in disponibles) {
+      rutas.putIfAbsent(
+        '${e.ciudadOrigen}|${e.ciudadDestino}'.toLowerCase(),
+        () => e,
+      );
+    }
+    final resultados = await Future.wait([
+      for (final e in rutas.values.take(_maxRutas))
+        api
+            .viajesDisponibles(origen: e.ciudadOrigen, destino: e.ciudadDestino)
+            .then((viajes) => [
+                  for (final v in viajes)
+                    if (v.uid != uid) (v, e),
+                ])
+            .catchError((Object _) => <(Viaje, Encomienda)>[]),
+    ]);
+    return resultados.expand((r) => r).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) => Loader<List<(Viaje, Encomienda)>>(
+        load: () => _load(context),
+        placeholder: const SizedBox.shrink(),
+        builder: (context, ofertas, _) {
+          if (ofertas.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 14),
+              const SectionTitle('Viajeros para tus encomiendas'),
+              for (final (index, (viaje, encomienda))
+                  in ofertas.take(4).indexed)
+                Padding(
+                  key: ValueKey('${viaje.uid}-${encomienda.id}-$index'),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ViajeroTicket(
+                    viaje: viaje,
+                    index: index,
+                    onTap: () => showViajeroSheet(
+                      context,
+                      viaje: viaje,
+                      actionLabel: 'Ver mi encomienda',
+                      onAction: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              EncomiendaDetailScreen(encomienda: encomienda),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
 }
 
 class _ActionTile extends StatelessWidget {

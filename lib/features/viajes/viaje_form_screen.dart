@@ -9,6 +9,7 @@ import '../../data/lapticon_api.dart';
 import '../../state/app_state.dart';
 import '../../widgets/common.dart';
 import '../../widgets/pickers.dart';
+import 'viaje_detail_screen.dart';
 
 class ViajeFormScreen extends StatefulWidget {
   const ViajeFormScreen({super.key});
@@ -97,7 +98,7 @@ class _ViajeFormScreenState extends State<ViajeFormScreen> {
       _error = null;
     });
     try {
-      await context.read<LapticonApi>().crearViaje(
+      final viaje = await context.read<LapticonApi>().crearViaje(
             numeroVuelo: _numeroVuelo,
             ciudadOrigen: _origen!,
             ciudadDestino: _destino!,
@@ -105,8 +106,15 @@ class _ViajeFormScreenState extends State<ViajeFormScreen> {
           );
       if (!mounted) return;
       context.read<Revision>().bump();
-      showSuccess(context, 'Viaje registrado.');
-      Navigator.pop(context);
+      showSuccess(
+        context,
+        'Viaje publicado. Quienes envían por esta ruta ya pueden verlo.',
+      );
+      // El detalle muestra enseguida las encomiendas que puede llevar.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(builder: (_) => ViajeDetailScreen(viaje: viaje)),
+      );
     } catch (error) {
       if (mounted) {
         setState(() {
